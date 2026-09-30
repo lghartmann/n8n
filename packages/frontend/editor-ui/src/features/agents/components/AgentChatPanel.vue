@@ -34,6 +34,8 @@ import { useAgentChatStream } from '../composables/useAgentChatStream';
 import { findTailOpenInteractive } from '@/features/ai/shared/agentsChat/messageMappers';
 import AgentChatEmptyState from './AgentChatEmptyState.vue';
 import AgentChatMessageList from './AgentChatMessageList.vue';
+import AgentChatPlan from './AgentChatPlan.vue';
+import { selectLatestAgentPlan } from '../utils/agent-plan';
 import type {
 	AgentContinueLoadedEvent,
 	AgentSendToAssistantEvent,
@@ -118,6 +120,8 @@ const {
 	},
 	onSessionCreated: (sessionId) => emit('session-created', sessionId),
 });
+
+const currentPlan = computed(() => selectLatestAgentPlan(messages.value));
 
 const { jobs: backgroundJobs } = useAgentBackgroundJobs({
 	projectId: () => props.projectId,
@@ -672,8 +676,14 @@ onBeforeUnmount(() => {
 				@stop="stopGenerating"
 				@files-selected="handleFilesSelected"
 			>
-				<template v-if="showBackgroundJobs" #header>
+				<template v-if="currentPlan || showBackgroundJobs" #header>
+					<AgentChatPlan
+						v-if="currentPlan"
+						:key="`${agentId}:${continueSessionId ?? ''}:${currentPlan.planId}`"
+						:plan="currentPlan"
+					/>
 					<div
+						v-if="showBackgroundJobs"
 						ref="backgroundJobCard"
 						:class="$style.backgroundJobs"
 						data-testid="agent-background-jobs"
