@@ -32,9 +32,8 @@ describe('WorkflowHistoryCompactionService', () => {
 	});
 
 	beforeEach(() => {
-		// Set the system to a time that isn't 3 AM to avoid hitting the "trim once a day" window
-		const mockDate = new Date(2026, 10, 10, 1, 0, 0);
-		vi.setSystemTime(mockDate);
+		// The window tests compare exact dates derived from `Date.now()`.
+		vi.setSystemTime(new Date(2026, 10, 10, 1, 0, 0));
 	});
 
 	afterEach(() => {
@@ -205,32 +204,6 @@ describe('WorkflowHistoryCompactionService', () => {
 		expect(trimLongRunningHistoriesSpy).toHaveBeenCalled();
 		// should still call recent history compaction
 		expect(optimizeHistoriesSpy).toHaveBeenCalled();
-	});
-
-	it('should trim if triggered at 3 AM with trimOnStartUp as false', () => {
-		const mockDate = new Date(2026, 10, 10, 3, 0, 0);
-		vi.setSystemTime(mockDate);
-
-		const compactingService = new WorkflowHistoryCompactionService(
-			{ ...config, trimOnStartUp: false },
-			globalConfig,
-			mockLogger(),
-			mock<InstanceSettings>({ isLeader: true, instanceType: 'main', isMultiMain: true }),
-			dbConnection,
-			mock(),
-			mock<EventService>(),
-		);
-
-		vi.spyOn(compactingService, 'optimizeHistories').mockImplementation((() => {}) as never);
-		const trimLongRunningHistoriesSpy = vi
-			.spyOn(compactingService, 'trimLongRunningHistories')
-			.mockImplementation((() => {}) as never);
-
-		compactingService.runStartupCompaction();
-
-		expect(trimLongRunningHistoriesSpy).toHaveBeenCalled();
-
-		vi.useRealTimers();
 	});
 
 	describe('compactHistories', () => {
@@ -409,31 +382,5 @@ describe('WorkflowHistoryCompactionService', () => {
 
 			expect(signal.aborted).toBe(true);
 		});
-	});
-
-	it('should not trim if triggered outside of 3 AM with trimOnStartUp as false', () => {
-		const mockDate = new Date(2026, 10, 10, 5, 0, 0);
-		vi.setSystemTime(mockDate);
-
-		const compactingService = new WorkflowHistoryCompactionService(
-			{ ...config, trimOnStartUp: false },
-			globalConfig,
-			mockLogger(),
-			mock<InstanceSettings>({ isLeader: true, instanceType: 'main', isMultiMain: true }),
-			dbConnection,
-			mock(),
-			mock<EventService>(),
-		);
-
-		vi.spyOn(compactingService, 'optimizeHistories').mockImplementation((() => {}) as never);
-		const trimLongRunningHistoriesSpy = vi
-			.spyOn(compactingService, 'trimLongRunningHistories')
-			.mockImplementation((() => {}) as never);
-
-		compactingService.runStartupCompaction();
-
-		expect(trimLongRunningHistoriesSpy).not.toHaveBeenCalled();
-
-		vi.useRealTimers();
 	});
 });

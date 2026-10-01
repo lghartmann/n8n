@@ -20,15 +20,15 @@ describe('WorkflowHistoryCompactionTrimTask', () => {
 		vi.useRealTimers();
 	});
 
-	it('should declare an hourly tick', () => {
+	it('should declare a daily cron in the instance timezone and run durably', () => {
 		expect(task.name).toBe('workflow-history-compaction-trim');
-		expect(task.schedule).toEqual({ kind: 'interval', intervalSeconds: 3600 });
+		expect(task.schedule).toEqual({ kind: 'cron', cronExpression: '0 3 * * *', timezone: null });
 		expect(task.effects).toBe('idempotent');
-		expect(task.placement).toEqual({ scope: 'cluster', durable: false });
+		expect(task.placement).toEqual({ scope: 'cluster', durable: true });
 	});
 
-	it('should trim at 3am server time, handing the pass its abort signal', async () => {
-		vi.setSystemTime(new Date(2026, 10, 10, 3, 0, 0));
+	it('should trim on every run, handing the pass its abort signal', async () => {
+		vi.setSystemTime(new Date(2026, 10, 10, 5, 0, 0));
 		setService();
 		const { signal } = new AbortController();
 
@@ -37,17 +37,7 @@ describe('WorkflowHistoryCompactionTrimTask', () => {
 		expect(compactionService.trimLongRunningHistories).toHaveBeenCalledExactlyOnceWith(signal);
 	});
 
-	it('should not trim outside of 3am server time', async () => {
-		vi.setSystemTime(new Date(2026, 10, 10, 5, 0, 0));
-		setService();
-
-		await task.run(new AbortController().signal);
-
-		expect(compactionService.trimLongRunningHistories).not.toHaveBeenCalled();
-	});
-
 	it('should not trim when the prune horizon is shorter than the trim window', async () => {
-		vi.setSystemTime(new Date(2026, 10, 10, 3, 0, 0));
 		setService({ trimmingEnabled: false });
 
 		await task.run(new AbortController().signal);

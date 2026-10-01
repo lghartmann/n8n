@@ -101,8 +101,7 @@ export class WorkflowHistoryCompactionService {
 
 		void this.optimizeHistories(signal);
 
-		if (!this.isTrimmingEnabled) return;
-		if (this.config.trimOnStartUp || new Date().getHours() === 3) {
+		if (this.isTrimmingEnabled && this.config.trimOnStartUp) {
 			void this.trimLongRunningHistories(signal);
 		}
 	}
