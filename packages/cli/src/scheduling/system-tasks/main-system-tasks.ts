@@ -2,6 +2,7 @@ import type { GlobalConfig } from '@n8n/config';
 import type { SystemTaskClass } from '@n8n/decorators';
 
 import { ActivityPruningTask } from '@/services/pruning/activity-pruning.task';
+import { isTrimmingEnabled } from '@/services/pruning/workflow-history-compaction.utils';
 
 /**
  * Return the main command's own system tasks, owned by no backend module.
@@ -23,9 +24,6 @@ export async function mainSystemTasks(globalConfig: GlobalConfig): Promise<Syste
 		PendingAuthorizationCleanupTask,
 	];
 
-	const { isTrimmingEnabled } = await import(
-		'@/services/pruning/workflow-history-compaction.service.js'
-	);
 	if (isTrimmingEnabled(globalConfig.workflowHistory, globalConfig.workflowHistoryCompaction)) {
 		const { WorkflowHistoryCompactionTrimTask } = await import(
 			'@/services/pruning/workflow-history-compaction-trim.task.js'

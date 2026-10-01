@@ -6,10 +6,7 @@ import type { DbConnection, WorkflowHistoryRepository } from '@n8n/db';
 import type { InstanceSettings } from 'n8n-core';
 import { mock } from 'vitest-mock-extended';
 
-import {
-	getCompactionWindowDeltas,
-	WorkflowHistoryCompactionService,
-} from '../workflow-history-compaction.service';
+import { WorkflowHistoryCompactionService } from '../workflow-history-compaction.service';
 
 describe('WorkflowHistoryCompactionService', () => {
 	const dbConnection = mock<DbConnection>({
@@ -38,22 +35,6 @@ describe('WorkflowHistoryCompactionService', () => {
 
 	afterEach(() => {
 		vi.useRealTimers();
-	});
-
-	describe('getCompactionWindowDeltas', () => {
-		it('should offset the start delta by the time window and leave the end delta at the minimum age', () => {
-			expect(getCompactionWindowDeltas(24, 2, Time.hours.toMilliseconds)).toEqual({
-				startDelta: 26 * Time.hours.toMilliseconds,
-				endDelta: 24 * Time.hours.toMilliseconds,
-			});
-		});
-
-		it('should return equal deltas for an empty time window', () => {
-			expect(getCompactionWindowDeltas(7, 0, Time.days.toMilliseconds)).toEqual({
-				startDelta: 7 * Time.days.toMilliseconds,
-				endDelta: 7 * Time.days.toMilliseconds,
-			});
-		});
 	});
 
 	describe('init', () => {
