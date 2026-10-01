@@ -12,9 +12,6 @@ export async function mainSystemTasks(globalConfig: GlobalConfig): Promise<Syste
 	const { WorkflowHistoryCompactionOptimizeTask } = await import(
 		'@/services/pruning/workflow-history-compaction-optimize.task.js'
 	);
-	const { WorkflowHistoryCompactionTrimTask } = await import(
-		'@/services/pruning/workflow-history-compaction-trim.task.js'
-	);
 	const { PendingAuthorizationCleanupTask } = await import(
 		'@/credentials/pending-authorization-cleanup.task.js'
 	);
@@ -23,9 +20,19 @@ export async function mainSystemTasks(globalConfig: GlobalConfig): Promise<Syste
 		ActivityPruningTask,
 		LicenseRenewalTask,
 		WorkflowHistoryCompactionOptimizeTask,
-		WorkflowHistoryCompactionTrimTask,
-		PendingAuthorizationCleanupTask,
 	];
+
+	const { isTrimmingEnabled } = await import(
+		'@/services/pruning/workflow-history-compaction.service.js'
+	);
+	if (isTrimmingEnabled(globalConfig.workflowHistory, globalConfig.workflowHistoryCompaction)) {
+		const { WorkflowHistoryCompactionTrimTask } = await import(
+			'@/services/pruning/workflow-history-compaction-trim.task.js'
+		);
+		tasks.push(WorkflowHistoryCompactionTrimTask);
+	}
+
+	tasks.push(PendingAuthorizationCleanupTask);
 
 	if (globalConfig.executions.pruneData) {
 		const { ExecutionPruningSoftDeleteTask } = await import(

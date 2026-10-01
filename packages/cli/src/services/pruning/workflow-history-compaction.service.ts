@@ -17,6 +17,18 @@ export function getCompactionWindowDeltas(minimumAge: number, timeWindow: number
 	return { startDelta: (minimumAge + timeWindow) * unitMs, endDelta: minimumAge * unitMs };
 }
 
+/** A prune horizon shorter than the trim window makes trimming pointless. */
+export function isTrimmingEnabled(
+	workflowHistory: GlobalConfig['workflowHistory'],
+	compaction: WorkflowHistoryCompactionConfig,
+): boolean {
+	return (
+		workflowHistory.pruneTime === -1 ||
+		workflowHistory.pruneTime * Time.hours.toMilliseconds >=
+			compaction.trimmingMinimumAgeDays * Time.days.toMilliseconds
+	);
+}
+
 /**
  * Responsible for compacting auto saved workflow history entries in the database.
  * The periodic cadence lives on the `workflow-history-compaction-optimize` and
@@ -77,15 +89,6 @@ export class WorkflowHistoryCompactionService {
 		return this.instanceSettings.instanceType === 'main' && this.instanceSettings.isLeader;
 	}
 
-	/** Whether trimming may run at all: a prune horizon shorter than the trim window makes trimming pointless. */
-	get isTrimmingEnabled() {
-		return (
-			this.globalConfig.workflowHistory.pruneTime === -1 ||
-			this.globalConfig.workflowHistory.pruneTime * Time.hours.toMilliseconds >=
-				this.config.trimmingMinimumAgeDays * Time.days.toMilliseconds
-		);
-	}
-
 	// One-shot catch-up pass on startup and on leader change, so a gap between
 	// leaders is compacted without waiting a full task interval. Not `runOnTakeover`
 	// on the tasks: `trimOnStartUp` forces a trim only here, and a task run cannot
@@ -101,7 +104,10 @@ export class WorkflowHistoryCompactionService {
 
 		void this.optimizeHistories(signal);
 
-		if (this.isTrimmingEnabled && this.config.trimOnStartUp) {
+		if (
+			this.config.trimOnStartUp &&
+			isTrimmingEnabled(this.globalConfig.workflowHistory, this.config)
+		) {
 			void this.trimLongRunningHistories(signal);
 		}
 	}

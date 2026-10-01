@@ -94,7 +94,7 @@ describe('WorkflowHistoryCompactionService', () => {
 
 	it('should skip trimming if pruneTime < trimAge', () => {
 		const compactingService = new WorkflowHistoryCompactionService(
-			config,
+			{ ...config, trimOnStartUp: true },
 			{ ...globalConfig, workflowHistory: { pruneTime: 24 } },
 			mockLogger(),
 			mock<InstanceSettings>({ isLeader: true, instanceType: 'main', isMultiMain: true }),
@@ -109,7 +109,6 @@ describe('WorkflowHistoryCompactionService', () => {
 
 		compactingService.runStartupCompaction();
 
-		expect(compactingService.isTrimmingEnabled).toBe(false);
 		expect(trimLongRunningHistoriesSpy).not.toBeCalled();
 	});
 	it('should not skip trimming if pruneTime > trimAge', () => {
