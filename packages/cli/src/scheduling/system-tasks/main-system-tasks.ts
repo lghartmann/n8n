@@ -20,6 +20,7 @@ export async function mainSystemTasks(globalConfig: GlobalConfig): Promise<Syste
 		ActivityPruningTask,
 		LicenseRenewalTask,
 		WorkflowHistoryCompactionOptimizeTask,
+		PendingAuthorizationCleanupTask,
 	];
 
 	const { isTrimmingEnabled } = await import(
@@ -31,8 +32,6 @@ export async function mainSystemTasks(globalConfig: GlobalConfig): Promise<Syste
 		);
 		tasks.push(WorkflowHistoryCompactionTrimTask);
 	}
-
-	tasks.push(PendingAuthorizationCleanupTask);
 
 	if (globalConfig.executions.pruneData) {
 		const { ExecutionPruningSoftDeleteTask } = await import(
